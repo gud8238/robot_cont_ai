@@ -37,6 +37,10 @@ export const emotionTurnResultSchema = z.object({
 
 export type EmotionTurnResult = z.infer<typeof emotionTurnResultSchema>;
 
+export const emotionSaveRequestSchema = z.object({ emotion: emotionSchema });
+
+export type EmotionSaveRequest = z.infer<typeof emotionSaveRequestSchema>;
+
 export const voiceCommandRequestSchema = z.discriminatedUnion("source", [
   z.object({ source: z.literal("speech"), transcript: z.string().trim().min(1).max(300) }),
   z.object({ source: z.literal("touch"), command: commandSchema })

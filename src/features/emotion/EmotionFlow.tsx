@@ -33,7 +33,14 @@ function phaseStatus(phase: ReturnType<typeof useEmotionSession>["phase"]) {
 export function EmotionFlow({ onExit }: EmotionFlowProps) {
   const session = useEmotionSession();
   const [draft, setDraft] = useState("");
+  const [profileError, setProfileError] = useState<{
+    field: "name" | "age" | "honorific";
+    message: string;
+  } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const ageRef = useRef<HTMLInputElement>(null);
+  const honorificRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (["profile", "ready", "saving-error", "result"].includes(session.phase)) {
@@ -49,11 +56,28 @@ export function EmotionFlow({ onExit }: EmotionFlowProps) {
   function submitProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    session.startProfile({
+    const profile = {
       name: String(data.get("name") ?? "").trim(),
       age: Number(data.get("age")),
       honorific: String(data.get("honorific") ?? "").trim(),
-    });
+    };
+    if (!profile.name) {
+      setProfileError({ field: "name", message: "이름을 입력해 주세요." });
+      nameRef.current?.focus();
+      return;
+    }
+    if (!Number.isInteger(profile.age) || profile.age < 4 || profile.age > 120) {
+      setProfileError({ field: "age", message: "나이는 4세부터 120세까지 입력해 주세요." });
+      ageRef.current?.focus();
+      return;
+    }
+    if (!profile.honorific) {
+      setProfileError({ field: "honorific", message: "불러줬으면 하는 이름을 입력해 주세요." });
+      honorificRef.current?.focus();
+      return;
+    }
+    setProfileError(null);
+    session.startProfile(profile);
   }
 
   async function submitDraft(event: FormEvent<HTMLFormElement>) {
@@ -77,19 +101,20 @@ export function EmotionFlow({ onExit }: EmotionFlowProps) {
           <h1 ref={headingRef} tabIndex={-1}>오늘의 기분에 대해 함께 알아봅시다</h1>
           <p>편하게 이야기할 수 있도록 먼저 어떻게 불러드리면 좋을지 알려주세요.</p>
         </div>
-        <form className="profile-form" onSubmit={submitProfile}>
+        <form className="profile-form" onSubmit={submitProfile} noValidate>
           <label>
             <span>이름</span>
-            <input name="name" type="text" autoComplete="name" required minLength={1} maxLength={30} />
+            <input ref={nameRef} name="name" type="text" autoComplete="name" required minLength={1} maxLength={30} aria-invalid={profileError?.field === "name"} aria-describedby={profileError?.field === "name" ? "profile-error" : undefined} />
           </label>
           <label>
             <span>나이</span>
-            <input name="age" type="number" inputMode="numeric" required min={4} max={120} />
+            <input ref={ageRef} name="age" type="number" inputMode="numeric" required min={4} max={120} aria-invalid={profileError?.field === "age"} aria-describedby={profileError?.field === "age" ? "profile-error" : undefined} />
           </label>
           <label>
             <span>불러줬으면 하는 이름</span>
-            <input name="honorific" type="text" required minLength={1} maxLength={30} placeholder="예: 민준아, 지우님" />
+            <input ref={honorificRef} name="honorific" type="text" required minLength={1} maxLength={30} placeholder="예: 민준아, 지우님" aria-invalid={profileError?.field === "honorific"} aria-describedby={profileError?.field === "honorific" ? "profile-error" : undefined} />
           </label>
+          {profileError ? <p id="profile-error" className="emotion-flow__error" role="alert">{profileError.message}</p> : null}
           <button className="primary-button" type="submit">대화 시작</button>
         </form>
       </section>

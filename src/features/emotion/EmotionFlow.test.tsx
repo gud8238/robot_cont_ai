@@ -1,5 +1,6 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EmotionFlow } from "./EmotionFlow";
 
@@ -89,6 +90,54 @@ describe("EmotionFlow", () => {
     );
   });
 
+  it("reaches the result when React StrictMode replays effect setup", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(completedResponse));
+    render(
+      <StrictMode>
+        <EmotionFlow onExit={vi.fn()} />
+      </StrictMode>,
+    );
+    await fillProfileAndSubmit();
+
+    await submitFallbackText("친구와 놀아서 즐거웠어요");
+
+    expect(await screen.findByRole("heading", { name: "행복" })).toBeVisible();
+    expect(screen.getByText(/시트에 전달했어요/)).toBeVisible();
+  });
+
+  it.each([
+    {
+      label: "공백 이름",
+      values: { name: "   ", age: "10", honorific: "민준아" },
+      message: "이름을 입력해 주세요.",
+      field: "이름",
+    },
+    {
+      label: "잘못된 나이",
+      values: { name: "민준", age: "3", honorific: "민준아" },
+      message: "나이는 4세부터 120세까지 입력해 주세요.",
+      field: "나이",
+    },
+    {
+      label: "공백 호칭",
+      values: { name: "민준", age: "10", honorific: "   " },
+      message: "불러줬으면 하는 이름을 입력해 주세요.",
+      field: "불러줬으면 하는 이름",
+    },
+  ])("$label 프로필을 거부하고 첫 오류 필드에 초점을 둔다", async ({ values, message, field }) => {
+    const user = userEvent.setup();
+    render(<EmotionFlow onExit={vi.fn()} />);
+    await user.type(screen.getByRole("textbox", { name: "이름" }), values.name);
+    await user.type(screen.getByRole("spinbutton", { name: "나이" }), values.age);
+    await user.type(screen.getByRole("textbox", { name: "불러줬으면 하는 이름" }), values.honorific);
+
+    await user.click(screen.getByRole("button", { name: "대화 시작" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByRole(field === "나이" ? "spinbutton" : "textbox", { name: field })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: /오늘의 기분/ })).toBeVisible();
+  });
+
   it("keeps typed input available when speech is unsupported", async () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse({
       reply: "조금 더 이야기해 줄래요?",
@@ -163,9 +212,43 @@ describe("EmotionFlow", () => {
 
     expect(screen.getByRole("heading", { name: "행복" })).toBeVisible();
     expect(screen.getByRole("button", { name: "다시 전송" })).toBeDisabled();
-    finishRetry?.(jsonResponse(completedResponse));
+    finishRetry?.(jsonResponse({ emotion: "행복", saved: true }));
     expect(await screen.findByText(/시트에 전달했어요/)).toBeVisible();
     expect(fetch).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
+      "/.netlify/functions/emotion-turn",
+      "/.netlify/functions/emotion-save",
+    ]);
+    expect(JSON.parse(String((vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit).body))).toEqual({
+      emotion: "행복",
+    });
+  });
+
+  it("cancels active speech synthesis when mute is turned on", async () => {
+    const synthesis = {
+      getVoices: vi.fn(() => [{ lang: "ko-KR" }]),
+      speak: vi.fn(),
+      cancel: vi.fn(),
+    };
+    class FakeUtterance {
+      lang = "";
+      voice = null;
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+    }
+    vi.stubGlobal("speechSynthesis", synthesis);
+    vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(completedResponse));
+    render(<EmotionFlow onExit={vi.fn()} />);
+    await fillProfileAndSubmit();
+    await submitFallbackText("기분이 좋아요");
+    expect(await screen.findByText("행복한 하루였군요.")).toBeVisible();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "음성 안내 끄기" }));
+
+    expect(synthesis.cancel).toHaveBeenCalledOnce();
+    expect(await screen.findByRole("heading", { name: "행복" })).toBeVisible();
   });
 
   it("cancels recognition before exiting and returns home", async () => {

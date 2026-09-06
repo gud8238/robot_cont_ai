@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { EmotionTurnRequest } from "../../netlify/functions/_shared/contracts";
+import type { Emotion, EmotionTurnRequest } from "../../netlify/functions/_shared/contracts";
 
 const emotionTurnResponseSchema = z.object({
   reply: z.string().trim().min(1).max(500),
@@ -14,6 +14,13 @@ const emotionTurnResponseSchema = z.object({
 });
 
 export type EmotionTurnResponse = z.infer<typeof emotionTurnResponseSchema>;
+
+const emotionSaveResponseSchema = z.object({
+  emotion: z.enum(["행복", "슬픔", "보통", "화남"]),
+  saved: z.literal(true),
+});
+
+export type EmotionSaveResponse = z.infer<typeof emotionSaveResponseSchema>;
 
 const apiErrorSchema = z.object({
   code: z.string(),
@@ -79,6 +86,44 @@ export async function postEmotionTurn(request: EmotionTurnRequest): Promise<Emot
 
   const parsed = emotionTurnResponseSchema.safeParse(body);
   if (!parsed.success) {
+    throw new ApiError("INVALID_RESPONSE", "서버 응답을 확인하지 못했어요. 다시 시도해 주세요.");
+  }
+  return parsed.data;
+}
+
+export async function postEmotionSave(emotion: Emotion): Promise<EmotionSaveResponse> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    throw new ApiError("OFFLINE", "인터넷 연결을 확인한 뒤 다시 시도해 주세요.");
+  }
+
+  let response: Response;
+  try {
+    response = await fetch("/.netlify/functions/emotion-save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emotion }),
+    });
+  } catch {
+    throw new ApiError("NETWORK_ERROR", "네트워크 연결을 확인한 뒤 다시 시도해 주세요.");
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new ApiError("INVALID_RESPONSE", "서버 응답을 확인하지 못했어요. 다시 시도해 주세요.");
+  }
+
+  if (!response.ok) {
+    const parsedError = apiErrorSchema.safeParse(body);
+    if (parsedError.success) {
+      throw new ApiError(parsedError.data.code, parsedError.data.message);
+    }
+    throw new ApiError("REQUEST_FAILED", "요청을 처리하지 못했어요. 다시 시도해 주세요.");
+  }
+
+  const parsed = emotionSaveResponseSchema.safeParse(body);
+  if (!parsed.success || parsed.data.emotion !== emotion) {
     throw new ApiError("INVALID_RESPONSE", "서버 응답을 확인하지 못했어요. 다시 시도해 주세요.");
   }
   return parsed.data;

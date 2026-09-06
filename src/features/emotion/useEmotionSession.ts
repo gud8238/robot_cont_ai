@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ApiError,
+  postEmotionSave,
   postEmotionTurn,
   type EmotionTurnRequest,
   type EmotionTurnResponse,
@@ -49,18 +50,19 @@ export function useEmotionSession() {
   const activeRef = useRef(false);
   const mountedRef = useRef(true);
   const playbackRef = useRef<SpeechPlayback | null>(null);
-  const lastRequestRef = useRef<EmotionTurnRequest | null>(null);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
-    adapter.cancel();
-    playbackRef.current?.cancel();
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      adapter.cancel();
+      playbackRef.current?.cancel();
+    };
   }, [adapter]);
 
   const finishResponse = useCallback(async (
     request: EmotionTurnRequest,
     response: EmotionTurnResponse,
-    skipSpeech = false,
   ) => {
     if (!mountedRef.current) {
       return;
@@ -71,10 +73,6 @@ export function useEmotionSession() {
       { role: "assistant", text: response.reply },
     ]));
     setResult(response.complete ? response : null);
-    if (skipSpeech) {
-      setPhase(response.complete ? (response.saved ? "result" : "saving-error") : "ready");
-      return;
-    }
     setPhase("speaking");
     const playback = speakKorean(response.reply, { muted });
     playbackRef.current = playback;
@@ -87,21 +85,18 @@ export function useEmotionSession() {
     setPhase(response.complete ? (response.saved ? "result" : "saving-error") : "ready");
   }, [muted]);
 
-  const requestTurn = useCallback(async (request: EmotionTurnRequest, preserveResult = false) => {
+  const requestTurn = useCallback(async (request: EmotionTurnRequest) => {
     if (activeRef.current) {
       return;
     }
 
     activeRef.current = true;
     setRequestActive(true);
-    lastRequestRef.current = request;
     setMessage("");
-    if (!preserveResult) {
-      setPhase("thinking");
-    }
+    setPhase("thinking");
     try {
       const response = await postEmotionTurn(request);
-      await finishResponse(request, response, preserveResult);
+      await finishResponse(request, response);
     } catch (error) {
       if (!mountedRef.current) {
         return;
@@ -172,16 +167,44 @@ export function useEmotionSession() {
   }, [adapter.supported]);
 
   const retrySave = useCallback(async () => {
-    if (lastRequestRef.current) {
-      await requestTurn(lastRequestRef.current, true);
+    const emotion = result?.emotion;
+    if (!emotion || activeRef.current) {
+      return;
     }
-  }, [requestTurn]);
+    activeRef.current = true;
+    setRequestActive(true);
+    setMessage("");
+    try {
+      await postEmotionSave(emotion);
+      if (mountedRef.current) {
+        setResult((current) => current ? { ...current, saved: true } : current);
+        setPhase("result");
+      }
+    } catch (error) {
+      if (mountedRef.current) {
+        setMessage(error instanceof ApiError ? error.message : "감정 결과를 저장하지 못했어요. 다시 시도해 주세요.");
+        setPhase("saving-error");
+      }
+    } finally {
+      activeRef.current = false;
+      if (mountedRef.current) {
+        setRequestActive(false);
+      }
+    }
+  }, [result?.emotion]);
 
   const cancel = useCallback(() => {
     adapter.cancel();
     playbackRef.current?.cancel();
     activeRef.current = false;
   }, [adapter]);
+
+  const toggleMuted = useCallback(() => {
+    if (!muted) {
+      playbackRef.current?.cancel();
+    }
+    setMuted((value) => !value);
+  }, [muted]);
 
   return {
     phase,
@@ -197,7 +220,7 @@ export function useEmotionSession() {
     startListening,
     cancelListening,
     retrySave,
-    toggleMuted: () => setMuted((value) => !value),
+    toggleMuted,
     cancel,
   } as const;
 }
