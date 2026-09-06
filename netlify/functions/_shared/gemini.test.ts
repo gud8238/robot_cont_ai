@@ -94,6 +94,122 @@ describe("Gemini gateway", () => {
     }));
   });
 
+  it("uses only supported wire constraints for strings and booleans", async () => {
+    const generate = fakeGenerate({
+      reply: "조금 더 이야기해 줄래요?",
+      emotion: null,
+      confidence: 0.4,
+      complete: false
+    });
+    const gateway = createGeminiGateway("test-key", generate);
+
+    await gateway.getEmotionTurn(requestWithUserUtterances(2));
+
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+      config: expect.objectContaining({
+        responseJsonSchema: expect.objectContaining({
+          properties: expect.objectContaining({
+            reply: { type: "string" },
+            complete: { type: "boolean" }
+          })
+        })
+      })
+    }));
+  });
+
+  it("requires an allowed emotion in the sixth-turn wire schema", async () => {
+    const generate = fakeGenerate({
+      reply: "지금 마음은 평온함에 가까워 보여요.",
+      emotion: "보통",
+      confidence: 0.72,
+      complete: true
+    });
+    const gateway = createGeminiGateway("test-key", generate);
+
+    await gateway.getEmotionTurn(requestWithUserUtterances(6));
+
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+      config: expect.objectContaining({
+        responseJsonSchema: expect.objectContaining({
+          properties: expect.objectContaining({
+            emotion: {
+              type: "string",
+              enum: ["행복", "슬픔", "보통", "화남"]
+            },
+            complete: { type: "boolean" }
+          })
+        })
+      })
+    }));
+  });
+
+  it("allows only null or the exact emotion enum during turns three through five", async () => {
+    const generate = fakeGenerate({
+      reply: "오늘 마음을 한 번 더 표현해 줄래요?",
+      emotion: null,
+      confidence: 0.6,
+      complete: false
+    });
+    const gateway = createGeminiGateway("test-key", generate);
+
+    await gateway.getEmotionTurn(requestWithUserUtterances(4));
+
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+      config: expect.objectContaining({
+        responseJsonSchema: expect.objectContaining({
+          properties: expect.objectContaining({
+            emotion: {
+              anyOf: [
+                { type: "string", enum: ["행복", "슬픔", "보통", "화남"] },
+                { type: "null" }
+              ]
+            },
+            complete: { type: "boolean" }
+          })
+        })
+      })
+    }));
+  });
+
+  it("tells the model that completion and a non-null emotion are inseparable", async () => {
+    const generate = fakeGenerate({
+      reply: "오늘 마음을 한 번 더 표현해 줄래요?",
+      emotion: "보통",
+      confidence: 0.7,
+      complete: true
+    });
+    const gateway = createGeminiGateway("test-key", generate);
+
+    await gateway.getEmotionTurn(requestWithUserUtterances(4));
+
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+      contents: expect.stringMatching(
+        /complete가 true이면 emotion은 null이 아닌.*emotion이 null이면 complete는 반드시 false/
+      )
+    }));
+  });
+
+  it("includes the core empathetic and safety rules in the emotion prompt", async () => {
+    const generate = fakeGenerate({
+      reply: "조금 더 이야기해 줄래요?",
+      emotion: null,
+      confidence: 0.4,
+      complete: false
+    });
+    const gateway = createGeminiGateway("test-key", generate);
+
+    await gateway.getEmotionTurn(requestWithUserUtterances(3));
+
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+      contents: expect.stringMatching(
+        /정확히 하나의 공감 질문[\s\S]*민준아[\s\S]*진단처럼 단정하지 마세요/
+      )
+    }));
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+      contents: expect.stringMatching(/믿을 수 있는 어른.*긴급 서비스/)
+    }));
+  });
+
   it("uses a strict command JSON response contract", async () => {
     const generate = fakeGenerate({ command: "좌회전" });
     const gateway = createGeminiGateway("test-key", generate);
@@ -149,11 +265,36 @@ describe("Gemini gateway", () => {
     expect(generate).toHaveBeenCalledTimes(2);
   });
 
+  it("retries a wrapped fetch transport failure exactly once", async () => {
+    const socketError = Object.assign(new Error("socket closed"), { code: "ECONNRESET" });
+    const wrappedError = Object.assign(new TypeError("fetch failed"), { cause: socketError });
+    const generate = vi.fn<GenerateContent>().mockRejectedValue(wrappedError);
+    const gateway = createGeminiGateway("test-key", generate);
+
+    await expect(gateway.classifyCommand("앞으로 가")).rejects.toBe(wrappedError);
+    expect(generate).toHaveBeenCalledTimes(2);
+  });
+
   it("does not retry malformed structured output", async () => {
     const generate = vi.fn<GenerateContent>().mockResolvedValue({ text: "not-json" });
     const gateway = createGeminiGateway("test-key", generate);
 
     await expect(gateway.getEmotionTurn(requestWithUserUtterances(3))).rejects.toBeInstanceOf(SyntaxError);
+    expect(generate).toHaveBeenCalledOnce();
+  });
+
+  it("does not retry Zod-invalid structured output", async () => {
+    const generate = fakeGenerate({
+      reply: "",
+      emotion: "보통",
+      confidence: 0.7,
+      complete: true
+    });
+    const gateway = createGeminiGateway("test-key", generate);
+
+    await expect(gateway.getEmotionTurn(requestWithUserUtterances(4))).rejects.toMatchObject({
+      name: "ZodError"
+    });
     expect(generate).toHaveBeenCalledOnce();
   });
 

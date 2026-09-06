@@ -50,20 +50,14 @@ function emotionJsonSchema(userUtteranceCount: number) {
           { type: "null" }
         ]
       };
-  const complete = userUtteranceCount < 3
-    ? { type: "boolean", enum: [false] }
-    : userUtteranceCount >= 6
-      ? { type: "boolean", enum: [true] }
-      : { type: "boolean" };
-
   return {
     type: "object",
     additionalProperties: false,
     properties: {
-      reply: { type: "string", minLength: 1, maxLength: 500 },
+      reply: { type: "string" },
       emotion,
       confidence: { type: "number", minimum: 0, maximum: 1 },
-      complete
+      complete: { type: "boolean" }
     },
     required: ["reply", "emotion", "confidence", "complete"]
   } as const;
@@ -76,6 +70,7 @@ function buildEmotionPrompt(request: EmotionTurnRequest, userUtteranceCount: num
     `사용자를 부를 때 제공된 존칭 ${JSON.stringify(request.profile.honorific)}을 자연스럽게 사용하세요.`,
     "의학적·심리학적 진단을 하거나 진단처럼 단정하지 마세요.",
     `emotion은 ${EMOTIONS.join(", ")} 중 하나 또는 아직 판단할 수 없을 때 null만 사용하세요.`,
+    "complete가 true이면 emotion은 null이 아닌 허용 값이어야 하며, emotion이 null이면 complete는 반드시 false입니다.",
     "사용자가 위험, 자해, 학대 또는 즉각적인 안전 문제를 말하면 가까운 믿을 수 있는 어른에게 즉시 알리고 긴급한 경우 지역 긴급 서비스의 도움을 받도록 reply에서 안내하세요.",
     "사용자 발화가 3회 미만이면 complete는 반드시 false입니다.",
     "사용자 발화가 6회 이상이면 가장 적합한 허용 emotion 하나를 선택하고 complete를 반드시 true로 설정하세요.",
@@ -98,18 +93,44 @@ function buildCommandPrompt(transcript: string): string {
   ].join("\n");
 }
 
-function isTransientGeminiFailure(error: unknown): boolean {
+const TRANSIENT_TRANSPORT_CODES = new Set([
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "UND_ERR_BODY_TIMEOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_SOCKET"
+]);
+
+function isTransientGeminiFailure(error: unknown, seen = new Set<object>()): boolean {
   if (typeof error !== "object" || error === null) {
     return false;
   }
+  if (seen.has(error)) {
+    return false;
+  }
+  seen.add(error);
 
   const status = "status" in error ? error.status : undefined;
-  if (typeof status === "number" && (status === 408 || status === 429 || status >= 500)) {
+  if (
+    typeof status === "number"
+    && (status === 408 || status === 429 || (status >= 500 && status <= 599))
+  ) {
     return true;
   }
 
   const code = "code" in error ? error.code : undefined;
-  return code === "ECONNRESET" || code === "ETIMEDOUT" || code === "EAI_AGAIN";
+  if (typeof code === "string" && TRANSIENT_TRANSPORT_CODES.has(code)) {
+    return true;
+  }
+
+  const cause = "cause" in error ? error.cause : undefined;
+  return isTransientGeminiFailure(cause, seen);
 }
 
 async function generateWithOneRetry(
