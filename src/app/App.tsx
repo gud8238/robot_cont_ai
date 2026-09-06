@@ -63,7 +63,7 @@ export function App() {
             <p className="home-intro__description">마음을 이야기해도, 움직임을 알려줘도 좋아요.</p>
           </div>
           <div className="mode-selector">
-            <figure className="robot-hero">
+              <figure className="robot-hero" style={{ overflow: "hidden" }}>
               <div className="robot-hero__orbit robot-hero__orbit--warm" aria-hidden="true" />
               <div className="robot-hero__orbit robot-hero__orbit--cool" aria-hidden="true" />
               <img className="robot-hero__image" src="/assets/hero/robot-link.webp" alt="웃으며 두 팔을 펼친 하얀 로봇 친구" width="1254" height="1254" fetchPriority="high" decoding="async" />

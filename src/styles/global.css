@@ -24,7 +24,7 @@ img, svg { display: block; max-width: 100%; }
 .home-intro__description { margin-top: 1rem; color: var(--color-muted); word-break: keep-all; }
 .mode-selector { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "hero" "emotion" "voice"; align-items: center; gap: 1.5rem; margin-block: 1.5rem 2.5rem; }
 .mode-selector > * { min-width: 0; }
-.robot-hero { grid-area: hero; position: relative; isolation: isolate; width: min(100%, 330px); margin-inline: auto; }
+.robot-hero { grid-area: hero; position: relative; isolation: isolate; overflow: hidden; width: min(100%, 330px); margin-inline: auto; }
 .robot-hero__image { width: 100%; height: auto; aspect-ratio: 1; mix-blend-mode: multiply; border-radius: 50%; }
 .robot-hero__orbit { position: absolute; z-index: -1; inset: 18% 2%; border: 2px solid transparent; border-radius: 50%; transform: rotate(-30deg); }
 .robot-hero__orbit--warm { border-top-color: var(--color-coral); border-left-color: var(--color-lavender); transform: rotate(-30deg) scale(1.04); }

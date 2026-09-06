@@ -46,4 +46,12 @@ describe("App", () => {
     await user.keyboard("{Enter}");
     expect(screen.getByRole("heading", { name: /음성명령을 내려주세요/ })).toBeVisible();
   });
+
+  it("clips decorative orbit arcs inside the hero at narrow widths", () => {
+    render(<App />);
+    const hero = screen.getByRole("img", { name: /웃으며 두 팔을 펼친/ }).closest(".robot-hero");
+
+    expect(hero).not.toBeNull();
+    expect((hero as HTMLElement).style.overflow).toBe("hidden");
+  });
 });
