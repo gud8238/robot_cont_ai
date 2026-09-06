@@ -251,6 +251,37 @@ describe("EmotionFlow", () => {
     expect(await screen.findByRole("heading", { name: "행복" })).toBeVisible();
   });
 
+  it("does not start speech when mute is turned on while a turn is pending", async () => {
+    let finishRequest: ((response: Response) => void) | undefined;
+    const synthesis = {
+      getVoices: vi.fn(() => [{ lang: "ko-KR" }]),
+      speak: vi.fn(),
+      cancel: vi.fn(),
+    };
+    class FakeUtterance {
+      lang = "";
+      voice = null;
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+    }
+    vi.stubGlobal("speechSynthesis", synthesis);
+    vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+    vi.mocked(fetch).mockImplementation(() => new Promise((resolve) => {
+      finishRequest = resolve;
+    }));
+    render(<EmotionFlow onExit={vi.fn()} />);
+    await fillProfileAndSubmit();
+
+    const user = userEvent.setup();
+    await user.type(screen.getByRole("textbox", { name: "직접 입력" }), "기분이 좋아요");
+    await user.click(screen.getByRole("button", { name: "보내기" }));
+    await user.click(screen.getByRole("button", { name: "음성 안내 끄기" }));
+    finishRequest?.(jsonResponse(completedResponse));
+
+    expect(await screen.findByRole("heading", { name: "행복" })).toBeVisible();
+    expect(synthesis.speak).not.toHaveBeenCalled();
+  });
+
   it("cancels recognition before exiting and returns home", async () => {
     vi.stubGlobal("SpeechRecognition", PermissionDeniedRecognition);
     const onExit = vi.fn();

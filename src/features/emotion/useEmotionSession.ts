@@ -49,6 +49,7 @@ export function useEmotionSession() {
   const [requestActive, setRequestActive] = useState(false);
   const activeRef = useRef(false);
   const mountedRef = useRef(true);
+  const mutedRef = useRef(false);
   const playbackRef = useRef<SpeechPlayback | null>(null);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export function useEmotionSession() {
     ]));
     setResult(response.complete ? response : null);
     setPhase("speaking");
-    const playback = speakKorean(response.reply, { muted });
+    const playback = speakKorean(response.reply, { muted: mutedRef.current });
     playbackRef.current = playback;
     await playback.finished;
     playbackRef.current = null;
@@ -83,7 +84,7 @@ export function useEmotionSession() {
       return;
     }
     setPhase(response.complete ? (response.saved ? "result" : "saving-error") : "ready");
-  }, [muted]);
+  }, []);
 
   const requestTurn = useCallback(async (request: EmotionTurnRequest) => {
     if (activeRef.current) {
@@ -200,11 +201,13 @@ export function useEmotionSession() {
   }, [adapter]);
 
   const toggleMuted = useCallback(() => {
-    if (!muted) {
+    const nextMuted = !mutedRef.current;
+    mutedRef.current = nextMuted;
+    if (nextMuted) {
       playbackRef.current?.cancel();
     }
-    setMuted((value) => !value);
-  }, [muted]);
+    setMuted(nextMuted);
+  }, []);
 
   return {
     phase,
