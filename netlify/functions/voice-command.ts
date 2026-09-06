@@ -6,7 +6,7 @@ import {
 } from "./_shared/contracts";
 import { readServerEnv } from "./_shared/env";
 import { createGasClient } from "./_shared/gas-client";
-import { createGeminiGateway, GeminiGatewayError } from "./_shared/gemini";
+import { createGeminiGateway } from "./_shared/gemini";
 import { parseJsonBody } from "./_shared/http";
 
 type FunctionResponse = {
@@ -76,13 +76,10 @@ async function parseVoiceRequest(event: HandlerEvent) {
 }
 
 function isUnsupportedCommand(error: unknown): boolean {
-  return error instanceof GeminiGatewayError
-    || (
-      typeof error === "object"
-      && error !== null
-      && "code" in error
-      && error.code === "UNSUPPORTED_COMMAND"
-    );
+  return typeof error === "object"
+    && error !== null
+    && "code" in error
+    && error.code === "UNSUPPORTED_COMMAND";
 }
 
 export function createVoiceHandler(dependencies: VoiceHandlerDependencies) {

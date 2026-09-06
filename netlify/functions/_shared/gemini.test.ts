@@ -228,12 +228,29 @@ describe("Gemini gateway", () => {
     }));
   });
 
-  it("rejects model output outside the command allowlist", async () => {
+  it("classifies an out-of-allowlist model value as an upstream failure", async () => {
     const gateway = createGeminiGateway("test-key", fakeGenerate({ command: "정지" }));
 
     await expect(gateway.classifyCommand("멈춰")).rejects.toMatchObject({
-      code: "UNSUPPORTED_COMMAND"
+      code: "UPSTREAM_FAILURE",
+      message: "Gemini 응답을 처리하지 못했습니다."
     });
+  });
+
+  it("sanitizes malformed command JSON as an upstream failure", async () => {
+    const privateModelOutput = "private-model-output";
+    const gateway = createGeminiGateway(
+      "test-key",
+      vi.fn().mockResolvedValue({ text: `{${privateModelOutput}` })
+    );
+
+    const promise = gateway.classifyCommand("앞으로 가");
+
+    await expect(promise).rejects.toMatchObject({
+      code: "UPSTREAM_FAILURE",
+      message: "Gemini 응답을 처리하지 못했습니다."
+    });
+    await expect(promise).rejects.not.toThrow(privateModelOutput);
   });
 
   it("returns the same stable error for ambiguous command output", async () => {
@@ -261,7 +278,10 @@ describe("Gemini gateway", () => {
     const generate = vi.fn<GenerateContent>().mockRejectedValue(transientError);
     const gateway = createGeminiGateway("test-key", generate);
 
-    await expect(gateway.classifyCommand("앞으로 가")).rejects.toBe(transientError);
+    await expect(gateway.classifyCommand("앞으로 가")).rejects.toMatchObject({
+      code: "UPSTREAM_FAILURE",
+      message: "Gemini 응답을 처리하지 못했습니다."
+    });
     expect(generate).toHaveBeenCalledTimes(2);
   });
 
@@ -271,7 +291,10 @@ describe("Gemini gateway", () => {
     const generate = vi.fn<GenerateContent>().mockRejectedValue(wrappedError);
     const gateway = createGeminiGateway("test-key", generate);
 
-    await expect(gateway.classifyCommand("앞으로 가")).rejects.toBe(wrappedError);
+    await expect(gateway.classifyCommand("앞으로 가")).rejects.toMatchObject({
+      code: "UPSTREAM_FAILURE",
+      message: "Gemini 응답을 처리하지 못했습니다."
+    });
     expect(generate).toHaveBeenCalledTimes(2);
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { HandlerEvent } from "@netlify/functions";
-import { GeminiGatewayError } from "./_shared/gemini";
+import { createGeminiGateway, GeminiGatewayError } from "./_shared/gemini";
 import { createVoiceHandler } from "./voice-command";
 
 function postEvent(body: unknown): HandlerEvent {
@@ -126,6 +126,46 @@ describe("voice-command function", () => {
     });
 
     const response = await handler(postEvent({ source: "speech", transcript: "멈춰" }));
+
+    expect(response.statusCode).toBe(422);
+    expect(responseBody(response)).toMatchObject({ code: "UNSUPPORTED_COMMAND" });
+    expect(saveCommand).not.toHaveBeenCalled();
+  });
+
+  it("maps malformed JSON from the real Gemini gateway to 502", async () => {
+    const privateModelOutput = "private-model-output";
+    const gateway = createGeminiGateway(
+      "test-key",
+      vi.fn().mockResolvedValue({ text: `{${privateModelOutput}` })
+    );
+    const saveCommand = vi.fn();
+    const handler = createVoiceHandler({
+      classifyCommand: gateway.classifyCommand,
+      saveCommand,
+      createRequestId: () => "voice-real-gateway"
+    });
+
+    const response = await handler(postEvent({ source: "speech", transcript: "앞으로 가" }));
+
+    expect(response.statusCode).toBe(502);
+    expect(responseBody(response)).toMatchObject({ code: "GEMINI_ERROR" });
+    expect(response.body).not.toContain(privateModelOutput);
+    expect(saveCommand).not.toHaveBeenCalled();
+  });
+
+  it("maps an explicit null from the real Gemini gateway to 422", async () => {
+    const gateway = createGeminiGateway(
+      "test-key",
+      vi.fn().mockResolvedValue({ text: JSON.stringify({ command: null }) })
+    );
+    const saveCommand = vi.fn();
+    const handler = createVoiceHandler({
+      classifyCommand: gateway.classifyCommand,
+      saveCommand,
+      createRequestId: () => "voice-real-gateway-null"
+    });
+
+    const response = await handler(postEvent({ source: "speech", transcript: "알아서 움직여" }));
 
     expect(response.statusCode).toBe(422);
     expect(responseBody(response)).toMatchObject({ code: "UNSUPPORTED_COMMAND" });

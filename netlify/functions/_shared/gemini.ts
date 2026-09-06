@@ -1,5 +1,7 @@
 import { GoogleGenAI, type GenerateContentParameters } from "@google/genai";
+import { z } from "zod";
 import {
+  commandSchema,
   emotionTurnResultSchema,
   voiceCommandResultSchema,
   type EmotionTurnRequest,
@@ -18,14 +20,20 @@ export type GenerateContent = (
 ) => Promise<GenerateContentResponse>;
 
 export class GeminiGatewayError extends Error {
-  readonly code: "UNSUPPORTED_COMMAND";
+  readonly code: "UNSUPPORTED_COMMAND" | "UPSTREAM_FAILURE";
 
-  constructor() {
-    super("지원하지 않는 명령입니다.");
+  constructor(code: "UNSUPPORTED_COMMAND" | "UPSTREAM_FAILURE" = "UNSUPPORTED_COMMAND") {
+    super(code === "UNSUPPORTED_COMMAND"
+      ? "지원하지 않는 명령입니다."
+      : "Gemini 응답을 처리하지 못했습니다.");
     this.name = "GeminiGatewayError";
-    this.code = "UNSUPPORTED_COMMAND";
+    this.code = code;
   }
 }
+
+const commandClassificationSchema = z.object({
+  command: commandSchema.nullable()
+}).strict();
 
 const commandJsonSchema = {
   type: "object",
@@ -188,20 +196,32 @@ export function createGeminiGateway(apiKey: string, injectedGenerate?: GenerateC
         throw new GeminiGatewayError();
       }
 
-      const response = await generateWithOneRetry(getGenerate(), {
-        model: MODEL,
-        contents: buildCommandPrompt(transcript),
-        config: {
-          responseMimeType: "application/json",
-          responseJsonSchema: commandJsonSchema
-        }
-      });
-
+      let response: GenerateContentResponse;
       try {
-        return voiceCommandResultSchema.parse(JSON.parse(response.text ?? ""));
+        response = await generateWithOneRetry(getGenerate(), {
+          model: MODEL,
+          contents: buildCommandPrompt(transcript),
+          config: {
+            responseMimeType: "application/json",
+            responseJsonSchema: commandJsonSchema
+          }
+        });
       } catch {
+        throw new GeminiGatewayError("UPSTREAM_FAILURE");
+      }
+
+      let result;
+      try {
+        result = commandClassificationSchema.parse(JSON.parse(response.text ?? ""));
+      } catch {
+        throw new GeminiGatewayError("UPSTREAM_FAILURE");
+      }
+
+      if (result.command === null) {
         throw new GeminiGatewayError();
       }
+
+      return voiceCommandResultSchema.parse(result);
     }
   };
 }
