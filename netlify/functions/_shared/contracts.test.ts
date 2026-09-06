@@ -33,6 +33,42 @@ describe("robot contracts", () => {
     expect(value.history).toHaveLength(1);
   });
 
+  it("limits profile name and honorific to 30 characters", () => {
+    expect(() => emotionTurnRequestSchema.parse({
+      profile: { name: "가".repeat(31), age: 10, honorific: "민준아" },
+      history: [{ role: "user", text: "오늘 친구와 놀았어요." }]
+    })).toThrow();
+    expect(() => emotionTurnRequestSchema.parse({
+      profile: { name: "민준", age: 10, honorific: "가".repeat(31) },
+      history: [{ role: "user", text: "오늘 친구와 놀았어요." }]
+    })).toThrow();
+  });
+
+  it.each([3, 121])("rejects an age outside the inclusive 4 to 120 range: %s", (age) => {
+    expect(() => emotionTurnRequestSchema.parse({
+      profile: { name: "민준", age, honorific: "민준아" },
+      history: [{ role: "user", text: "오늘 친구와 놀았어요." }]
+    })).toThrow();
+  });
+
+  it("requires one to twelve history items", () => {
+    const profile = { name: "민준", age: 10, honorific: "민준아" };
+    const item = { role: "user" as const, text: "오늘 친구와 놀았어요." };
+
+    expect(() => emotionTurnRequestSchema.parse({ profile, history: [] })).toThrow();
+    expect(() => emotionTurnRequestSchema.parse({
+      profile,
+      history: Array.from({ length: 13 }, () => item)
+    })).toThrow();
+  });
+
+  it("rejects history text longer than 800 characters", () => {
+    expect(() => emotionTurnRequestSchema.parse({
+      profile: { name: "민준", age: 10, honorific: "민준아" },
+      history: [{ role: "user", text: "가".repeat(801) }]
+    })).toThrow();
+  });
+
   it("requires an emotion for a completed emotion turn", () => {
     expect(() => emotionTurnResultSchema.parse({
       reply: "기분을 알려주세요.",
