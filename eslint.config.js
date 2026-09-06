@@ -3,7 +3,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
   {
-    ignores: ["dist", "node_modules", "playwright-report", "test-results"],
+    ignores: ["dist", "node_modules", "netlify/**/*.ts", "playwright-report", "test-results"],
   },
   {
     files: ["**/*.{js,ts,tsx}"],
