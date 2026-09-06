@@ -1,0 +1,46 @@
+{
+  "name": "robot-cont-ai",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:netlify": "netlify dev",
+    "build": "tsc --noEmit && vite build",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:gate": "npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build"
+  },
+  "dependencies": {
+    "@google/genai": "^2.21.0",
+    "@netlify/functions": "^6.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "latest",
+    "@google/clasp": "3.4.1",
+    "@playwright/test": "1.63.0",
+    "@testing-library/dom": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "eslint": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-react-refresh": "latest",
+    "jsdom": "latest",
+    "msw": "latest",
+    "netlify-cli": "27.5.0",
+    "typescript": "7.0.2",
+    "typescript-eslint": "latest",
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
+  }
+}

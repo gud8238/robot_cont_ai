@@ -1,2 +1,10 @@
 .worktrees/
 .superpowers/
+.env
+.env.*
+!.env.example
+.netlify
+dist
+node_modules
+playwright-report
+test-results
