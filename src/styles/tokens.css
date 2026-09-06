@@ -1,0 +1,28 @@
+:root {
+  color-scheme: light;
+  --color-canvas: #eaf8fb;
+  --color-ink: #073e4a;
+  --color-aqua: #24c7d1;
+  --color-coral: #ff7d7a;
+  --color-lavender: #a99cf5;
+  --color-white: #fff;
+  --color-muted: #456670;
+  --color-line: #c8e3e8;
+  --color-warm-surface: #fff0ee;
+  --color-cool-surface: #e2f8f8;
+  --color-error: #a12e36;
+  --color-success: #17634e;
+  --font-display: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --font-body: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --text-small: 0.875rem;
+  --text-body: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+  --text-title: clamp(2rem, 1.15rem + 2.3vw, 3.5rem);
+  --space-page: clamp(1.25rem, 0.5rem + 3vw, 4rem);
+  --space-card: clamp(1.5rem, 1rem + 1vw, 2.25rem);
+  --radius-card: 2rem;
+  --radius-control: 1.125rem;
+  --shadow-card: 0 20px 60px -24px rgb(32 118 136 / 25%);
+  --shadow-hover: 0 24px 64px -22px rgb(32 118 136 / 32%);
+  --motion-fast: 180ms;
+  --motion-ease: cubic-bezier(0.2, 0.65, 0.3, 1);
+}
