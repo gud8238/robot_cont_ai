@@ -54,4 +54,16 @@ describe("App", () => {
     expect(hero).not.toBeNull();
     expect((hero as HTMLElement).style.overflow).toBe("hidden");
   });
+
+  it("opens the voice introduction before revealing command controls", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "음성명령로봇 시작" }));
+
+    expect(screen.getByRole("button", { name: "안내 확인" })).toBeVisible();
+    expect(screen.queryByRole("group", { name: "로봇 방향 명령" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "안내 확인" }));
+    expect(screen.getByRole("group", { name: "로봇 방향 명령" })).toBeVisible();
+  });
 });

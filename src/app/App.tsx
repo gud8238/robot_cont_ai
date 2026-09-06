@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ModeCard } from "../components/ModeCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmotionFlow } from "../features/emotion/EmotionFlow";
+import { VoiceFlow } from "../features/voice/VoiceFlow";
 import "../styles/global.css";
 
 export type Mode = "home" | "emotion" | "voice";
@@ -22,10 +23,6 @@ const modes = [
     examples: ["전진", "후진", "좌회전", "우회전"],
   },
 ] as const;
-
-function focusHeading(node: HTMLHeadingElement | null) {
-  node?.focus();
-}
 
 function focusButton(node: HTMLButtonElement | null) {
   node?.focus();
@@ -84,10 +81,8 @@ export function App() {
           <EmotionFlow onExit={() => setNavigation({ mode: "home", lastMode })} />
         </main>
       ) : (
-        <main className="mode-placeholder">
-          <button className="home-button" type="button" onClick={() => setNavigation({ mode: "home", lastMode })}><span aria-hidden="true">← </span>처음으로</button>
-          <h1 ref={focusHeading} tabIndex={-1}>음성명령을 내려주세요</h1>
-          <p>로봇에게 방향을 알려주는 명령 화면을 준비하고 있어요.</p>
+        <main>
+          <VoiceFlow onExit={() => setNavigation({ mode: "home", lastMode })} />
         </main>
       )}
     </div>

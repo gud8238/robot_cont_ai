@@ -91,10 +91,41 @@ img, svg { display: block; max-width: 100%; }
 .emotion-result__card img { width: 100%; aspect-ratio: 1; border-radius: 1.5rem; object-fit: cover; }
 .emotion-result__copy { display: grid; justify-items: start; gap: 1rem; }
 .emotion-result__reply { color: var(--color-muted); font-size: clamp(1.05rem, 1rem + 0.3vw, 1.25rem); }
+.voice-flow { width: min(100%, 960px); margin: clamp(1.5rem, 5vh, 4rem) auto; }
+.voice-flow__eyebrow { margin-bottom: 0.5rem; color: #087985; font-size: var(--text-small); font-weight: 800; }
+.voice-intro__card { margin-top: 1.5rem; padding: clamp(1.5rem, 3vw, 2.75rem); border: 1px solid var(--color-white); border-radius: var(--radius-card); background: rgb(255 255 255 / 90%); box-shadow: var(--shadow-card); text-align: center; }
+.voice-intro__card h1, .voice-controller__header h1 { font-size: clamp(1.9rem, 1.35rem + 1.5vw, 3rem); line-height: 1.35; letter-spacing: -0.055em; }
+.voice-intro__description { max-width: 680px; margin: 0.75rem auto 0; color: var(--color-muted); word-break: keep-all; }
+.voice-command-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin: 2rem 0 1rem; padding: 0; list-style: none; }
+.voice-command-list li { display: grid; gap: 0.25rem; min-width: 0; padding: 1rem 0.75rem; border: 1px solid var(--color-line); border-radius: var(--radius-control); background: var(--color-cool-surface); }
+.voice-command-list strong { font-family: var(--font-display); font-size: 1.125rem; }
+.voice-command-list span, .voice-intro__notice { color: var(--color-muted); font-size: var(--text-small); }
+.voice-intro__start { width: min(100%, 360px); margin-top: 1.5rem; background: var(--color-aqua); }
+.voice-controller__header { display: grid; justify-items: center; gap: 0.75rem; margin-block: 1.5rem 1rem; text-align: center; }
+.voice-controller { position: relative; width: min(100%, 620px); margin-inline: auto; padding: clamp(0.75rem, 2vw, 1.5rem); border: 1px solid var(--color-white); border-radius: calc(var(--radius-card) + 0.5rem); background: rgb(255 255 255 / 70%); box-shadow: var(--shadow-card); }
+.direction-pad { display: grid; grid-template: repeat(3, minmax(88px, 1fr)) / repeat(3, minmax(88px, 1fr)); gap: clamp(0.5rem, 1.5vw, 1rem); }
+.direction-button { display: grid; place-items: center; align-content: center; gap: 0.25rem; min-width: 64px; min-height: 88px; padding: 0.625rem; border: 0; border-radius: 1.5rem; background: var(--color-cool-surface); color: var(--color-ink); font-weight: 800; box-shadow: inset 0 0 0 1px rgb(7 62 74 / 8%); transition: transform var(--motion-fast) var(--motion-ease), background var(--motion-fast) var(--motion-ease); }
+.direction-button svg { width: 30px; height: 30px; }
+.direction-button--forward { grid-area: 1 / 2; }
+.direction-button--left { grid-area: 2 / 1; }
+.direction-button--right { grid-area: 2 / 3; }
+.direction-button--backward { grid-area: 3 / 2; }
+.direction-button:disabled { opacity: 0.5; }
+.voice-controller__microphone { position: absolute; inset: 50% auto auto 50%; width: min(28%, 136px); aspect-ratio: 1; transform: translate(-50%, -50%); }
+.voice-controller__microphone .speech-button { width: 100%; height: 100%; min-height: 0; padding: 0.75rem; border-radius: 50%; box-shadow: 0 12px 30px -14px rgb(7 62 74 / 45%); }
+.voice-controller__microphone .speech-button__icon { width: clamp(48px, 7vw, 68px); height: clamp(48px, 7vw, 68px); }
+.voice-controller__microphone .speech-button > span:last-child { font-size: clamp(0.75rem, 1.5vw, 0.95rem); line-height: 1.2; }
+.voice-feedback { display: grid; justify-items: center; gap: 0.75rem; min-height: 112px; margin: 1rem auto 0; text-align: center; }
+.voice-feedback__transcript { color: var(--color-muted); }
+.voice-feedback__status { width: min(100%, 620px); padding: 0.75rem 1rem; border: 1px solid var(--color-line); border-radius: var(--radius-control); background: rgb(255 255 255 / 72%); font-weight: 700; }
+.voice-feedback__status--success { border-color: rgb(23 99 78 / 25%); background: #ecfaf4; color: var(--color-success); }
+.voice-feedback__status--error { border-color: rgb(161 46 54 / 25%); background: #fff0f1; color: var(--color-error); }
+.voice-feedback .primary-button { background: var(--color-aqua); }
 
 @media (hover: hover) {
   .mode-card__start:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
   .home-button:hover { background: var(--color-cool-surface); }
+  .direction-button:hover:not(:disabled) { transform: translateY(-2px); background: #c9f2f4; }
 }
 @media (min-width: 768px) {
   .mode-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "hero hero" "emotion voice"; gap: 1.5rem; margin-top: 1rem; }
@@ -114,6 +145,11 @@ img, svg { display: block; max-width: 100%; }
   .profile-form label:last-of-type, .profile-form .primary-button, .profile-form .emotion-flow__error { grid-column: auto; }
   .emotion-flow__toolbar { align-items: stretch; flex-direction: column; }
   .speech-button { min-height: 112px; }
+  .voice-command-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .direction-pad { grid-template: repeat(3, minmax(76px, 1fr)) / repeat(3, minmax(76px, 1fr)); gap: 0.5rem; }
+  .direction-button { min-height: 76px; border-radius: 1.25rem; }
+  .voice-controller__microphone { width: 31%; }
+  .voice-controller__microphone .speech-button__icon { width: 44px; height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
