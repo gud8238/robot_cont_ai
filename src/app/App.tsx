@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ModeCard } from "../components/ModeCard";
 import { StatusBadge } from "../components/StatusBadge";
+import { EmotionFlow } from "../features/emotion/EmotionFlow";
 import "../styles/global.css";
 
 export type Mode = "home" | "emotion" | "voice";
@@ -78,11 +79,15 @@ export function App() {
             <p>화면의 큰 버튼을 눌러 시작해 주세요.</p>
           </footer>
         </main>
+      ) : mode === "emotion" ? (
+        <main>
+          <EmotionFlow onExit={() => setNavigation({ mode: "home", lastMode })} />
+        </main>
       ) : (
         <main className="mode-placeholder">
           <button className="home-button" type="button" onClick={() => setNavigation({ mode: "home", lastMode })}><span aria-hidden="true">← </span>처음으로</button>
-          <h1 ref={focusHeading} tabIndex={-1}>{mode === "emotion" ? "오늘의 기분에 대해 함께 알아봅시다" : "음성명령을 내려주세요"}</h1>
-          <p>{mode === "emotion" ? "로봇과 마음을 나누는 대화 화면을 준비하고 있어요." : "로봇에게 방향을 알려주는 명령 화면을 준비하고 있어요."}</p>
+          <h1 ref={focusHeading} tabIndex={-1}>음성명령을 내려주세요</h1>
+          <p>로봇에게 방향을 알려주는 명령 화면을 준비하고 있어요.</p>
         </main>
       )}
     </div>
