@@ -18,13 +18,22 @@ for (const viewport of viewports) {
       await expect(page.getByRole("button", { name: "음성명령로봇 시작" })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.getByRole("button", { name: "감정인식로봇 시작" }).click();
-      await expect(page.getByRole("button", { name: "대화 시작" })).toBeVisible();
+      await page.getByRole("textbox", { name: "이름", exact: true }).fill("하늘");
+      await page.getByRole("spinbutton", { name: "나이" }).fill("10");
+      await page.getByRole("textbox", { name: "불러줬으면 하는 이름" }).fill("하늘아");
+      await page.getByRole("button", { name: "대화 시작" }).click();
+      await expect(page.getByRole("button", { name: "음성으로 말하기" })).toBeVisible();
+      await expect(page.getByRole("textbox", { name: "직접 입력" })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.getByRole("button", { name: "처음으로" }).click();
       await page.getByRole("button", { name: "음성명령로봇 시작" }).click();
       await page.getByRole("button", { name: "안내 확인" }).click();
       const directions = page.getByRole("group", { name: "로봇 방향 명령" }).getByRole("button");
       await expect(directions).toHaveCount(4);
+      for (const direction of await directions.all()) {
+        await direction.scrollIntoViewIfNeeded();
+        await expect(direction).toBeVisible();
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       if (viewport.width >= 768) {
         for (const direction of await directions.all()) {

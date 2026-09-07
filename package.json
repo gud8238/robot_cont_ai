@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test tests/e2e --pass-with-no-tests",
-    "test:gate": "npm run lint && npm run typecheck && npm test && npm run test:e2e && npm run build"
+    "test:e2e": "playwright test tests/e2e",
+    "test:gate": "npm run lint && npm run typecheck && npm run build && npm test && npm run test:e2e"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",

@@ -1,53 +1,53 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { expect, test } from "vitest";
+import { formatFindings, scanEntries, scanRepository } from "./secret-scanner";
 
-const root = process.cwd();
+const geminiPrefix = "AI" + "za";
+const gasPrefix = "A" + "Q.";
 const viteGemini = "VITE_" + "GEMINI";
-const aiKeyPrefix = "AI" + "za";
+const geminiName = "GEMINI" + "_API_KEY";
+const voiceGasTokenName = "VOICE" + "_GAS_TOKEN";
+const syntheticGemini = `${geminiPrefix}${"x".repeat(24)}`;
+const syntheticGasToken = `${gasPrefix}${"y".repeat(24)}`;
 
-type Rule = { readonly name: string; readonly pattern: RegExp };
+test("allows empty example assignments line-by-line while still detecting a later nonempty assignment", () => {
+  const findings = scanEntries([{
+    file: ".env.example",
+    content: [
+      `${geminiName}=`,
+      "EMOTION_GAS_TOKEN=",
+      `${geminiName}=${syntheticGemini}`,
+    ].join("\n"),
+  }]);
 
-const rules: readonly Rule[] = [
-  { name: "google-api-key", pattern: new RegExp(`${aiKeyPrefix}[A-Za-z0-9_-]{20,}`) },
-  { name: "generic-secret-key", pattern: /(?:sk|rk|pk)_[A-Za-z0-9_-]{20,}/ },
-  { name: "gemini-value", pattern: /GEMINI_API_KEY\s*=\s*[^\s#]+/ },
-  { name: "gas-token-value", pattern: /(?:EMOTION|VOICE)_GAS_TOKEN\s*=\s*[^\s#]+/ },
-  { name: "client-gemini-variable", pattern: new RegExp(viteGemini) },
-];
+  expect(findings).toEqual([{ file: ".env.example", rule: "google-api-key" }, { file: ".env.example", rule: "gemini-assignment" }]);
+});
 
-function trackedTextFiles(): string[] {
-  return execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "buffer" })
-    .toString("utf8")
-    .split("\0")
-    .filter(Boolean)
-    .filter((file) => /^(?:src|netlify|apps-script|tests|public)\//.test(file) || [".env.example", "index.html", "package.json", "package-lock.json", "vite.config.ts", "playwright.config.ts"].includes(file))
-    .filter((file) => !/\.(?:webp|png|jpe?g|gif|ico|zip|pdf)$/i.test(file));
-}
+test.each([
+  ["bare Gemini prefix", `const marker = \"${geminiPrefix}\";`, "google-api-key"],
+  ["AQ-style GAS token", `const token = \"${syntheticGasToken}\";`, "gas-token"],
+  ["object-style Gemini assignment", `const config = { ${geminiName}: \"${syntheticGemini}\" };`, "google-api-key"],
+  ["object-style GAS assignment", `const config = { ${voiceGasTokenName}: \"value\" };`, "gas-token-assignment"],
+  ["assignment-style Gemini value", `${geminiName}=${syntheticGemini}`, "google-api-key"],
+  ["client Gemini variable", `const name = \"${viteGemini}\";`, "client-gemini-variable"],
+] as const)("detects %s without exposing the matched value", (_label, content, rule) => {
+  const findings = scanEntries([{ file: "src/controlled-fixture.ts", content }]);
 
-function filesUnder(directory: string): string[] {
-  if (!existsSync(directory)) return [];
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const target = join(directory, entry.name);
-    return entry.isDirectory() ? filesUnder(target) : [target];
-  });
-}
+  expect(findings).toContainEqual({ file: "src/controlled-fixture.ts", rule });
+  expect(JSON.stringify(findings)).not.toContain(syntheticGemini);
+  expect(JSON.stringify(findings)).not.toContain(syntheticGasToken);
+});
 
-function isExplicitlyEmptyExample(file: string, content: string): boolean {
-  return file === ".env.example" && /^\s*(?:GEMINI_API_KEY|EMOTION_GAS_URL|VOICE_GAS_URL|EMOTION_GAS_TOKEN|VOICE_GAS_TOKEN)=\s*$/m.test(content);
-}
+test("scans tracked source candidates without requiring a pre-existing production build", () => {
+  const result = scanRepository(process.cwd());
 
-test("keeps tracked sources and the production build free of client and server secrets", () => {
-  const dist = join(root, "dist");
-  expect(existsSync(dist), "Run npm run build before the secret scan.").toBe(true);
-  const files = [...trackedTextFiles(), ...filesUnder(dist).filter((file) => statSync(file).isFile()).map((file) => relative(root, file))];
-  const findings: string[] = [];
-  for (const file of files) {
-    const content = readFileSync(join(root, file), "utf8");
-    for (const rule of rules) {
-      if (rule.pattern.test(content) && !isExplicitlyEmptyExample(file, content)) findings.push(`${file}: ${rule.name}`);
-    }
-  }
-  expect(findings, findings.length ? `Secret scan findings: ${findings.join(", ")}` : undefined).toEqual([]);
+  expect(result.findings, formatFindings(result.findings) || undefined).toEqual([]);
+  expect(typeof result.scannedDist).toBe("boolean");
+});
+
+test("formats failures with only a relative path and rule name", () => {
+  const findings = scanEntries([{ file: "src/controlled-fixture.ts", content: syntheticGemini }]);
+  const message = formatFindings(findings);
+
+  expect(message).toBe("src/controlled-fixture.ts: google-api-key");
+  expect(message).not.toContain(syntheticGemini);
 });
