@@ -90,6 +90,20 @@ describe("EmotionFlow", () => {
     );
   });
 
+  it("submits typed emotion text with Enter", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(completedResponse));
+    render(<EmotionFlow onExit={vi.fn()} />);
+    await fillProfileAndSubmit();
+
+    const user = userEvent.setup();
+    await user.type(
+      screen.getByRole("textbox", { name: "직접 입력" }),
+      "친구와 놀아서 즐거웠어요{Enter}",
+    );
+
+    expect(await screen.findByRole("heading", { name: "행복" })).toBeVisible();
+  });
+
   it("reaches the result when React StrictMode replays effect setup", async () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse(completedResponse));
     render(

@@ -31,8 +31,8 @@ export function ModeCard({ variant, title, eyebrow, description, examples, onSta
       <ul className="mode-card__examples" aria-label={variant === "emotion" ? "알아볼 수 있는 기분" : "사용할 수 있는 명령"}>
         {examples.map((example) => <li key={example}>{example}</li>)}
       </ul>
-      <button ref={buttonRef} className="mode-card__start" type="button" onClick={onStart}>
-        {title} 시작 <span aria-hidden="true">↗</span>
+      <button ref={buttonRef} className="mode-card__start" type="button" onClick={onStart} aria-label={`${title} 시작`}>
+        시작하기 <span aria-hidden="true">→</span>
       </button>
     </section>
   );

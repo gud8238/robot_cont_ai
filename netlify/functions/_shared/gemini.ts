@@ -9,7 +9,7 @@ import {
   type VoiceCommandResult
 } from "./contracts";
 
-const MODEL = "gemini-3.6-flash";
+const MODEL = "gemini-3.5-flash-lite";
 const EMOTIONS = ["행복", "슬픔", "보통", "화남"] as const;
 const COMMANDS = ["전진", "후진", "좌회전", "우회전"] as const;
 

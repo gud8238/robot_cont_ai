@@ -48,32 +48,37 @@ export function App() {
               <path d="M16 9V5M11 16v2m10-2v2m-8 4h6" />
             </svg>
           </span>
-          로봇이랑
+          <span>Robot <strong>Link</strong></span>
         </div>
-        <span className="header-note">마음을 나누고, 움직임을 만드는 시간</span>
+        <span className="header-note">
+          <span className="header-note__dot" aria-hidden="true" />
+          감정과 명령을 하나로
+        </span>
       </header>
 
       {mode === "home" ? (
         <main>
           <div className="home-intro">
-            <p className="home-intro__eyebrow">반가워요, 함께 시작해 볼까요?</p>
-            <h1>오늘은 어떤 로봇과 <span>함께할까요?</span></h1>
-            <p className="home-intro__description">마음을 이야기해도, 움직임을 알려줘도 좋아요.</p>
+            <p className="home-intro__eyebrow"><span aria-hidden="true">✦</span> 오늘의 로봇 파트너</p>
+            <h1>로봇 모드를 선택하세요</h1>
+            <p className="home-intro__description">어떤 방식으로 오늘 하루를 시작할까요?<br />로봇과 함께하는 특별한 경험이 기다리고 있어요.</p>
           </div>
           <div className="mode-selector">
-              <figure className="robot-hero" style={{ overflow: "hidden" }}>
+            <figure className="robot-hero" style={{ overflow: "hidden" }}>
               <div className="robot-hero__orbit robot-hero__orbit--warm" aria-hidden="true" />
               <div className="robot-hero__orbit robot-hero__orbit--cool" aria-hidden="true" />
-              <img className="robot-hero__image" src="/assets/hero/robot-link.webp" alt="웃으며 두 팔을 펼친 하얀 로봇 친구" width="1254" height="1254" fetchPriority="high" decoding="async" />
-              <figcaption>어떤 이야기도 들을 준비가 됐어요</figcaption>
+              <span className="robot-hero__spark robot-hero__spark--one" aria-hidden="true" />
+              <span className="robot-hero__spark robot-hero__spark--two" aria-hidden="true" />
+              <img className="robot-hero__image" src="/assets/hero/robot-link-v2.webp" alt="웃으며 손을 흔드는 하얀 로봇 친구" width="1024" height="1536" fetchPriority="high" decoding="async" />
+              <figcaption><strong>Robot Link</strong><span>언제나, 너와 함께</span></figcaption>
             </figure>
             {modes.map((item) => (
               <ModeCard key={item.variant} {...item} onStart={() => openMode(item.variant)} buttonRef={lastMode === item.variant ? focusButton : undefined} />
             ))}
           </div>
           <footer className="home-footer">
-            <StatusBadge>두 가지 로봇 체험</StatusBadge>
-            <p>화면의 큰 버튼을 눌러 시작해 주세요.</p>
+            <StatusBadge>연결 준비 완료</StatusBadge>
+            <p>마음을 듣고, 세상을 움직이는 로봇과 연결해 보세요.</p>
           </footer>
         </main>
       ) : mode === "emotion" ? (

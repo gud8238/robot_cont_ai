@@ -82,7 +82,7 @@ describe("Gemini gateway", () => {
 
     expect(generate).toHaveBeenCalledOnce();
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash-lite",
       contents: expect.stringContaining("민준아"),
       config: expect.objectContaining({
         responseMimeType: "application/json",
@@ -216,7 +216,7 @@ describe("Gemini gateway", () => {
 
     await expect(gateway.classifyCommand("왼쪽으로 돌아")).resolves.toEqual({ command: "좌회전" });
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash-lite",
       config: {
         responseMimeType: "application/json",
         responseJsonSchema: expect.objectContaining({

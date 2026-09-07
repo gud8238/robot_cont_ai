@@ -97,9 +97,12 @@ export function EmotionFlow({ onExit }: EmotionFlowProps) {
           <span aria-hidden="true">← </span>처음으로
         </button>
         <div className="emotion-flow__intro">
-          <p className="emotion-flow__eyebrow">마음을 나누는 대화</p>
-          <h1 ref={headingRef} tabIndex={-1}>오늘의 기분에 대해 함께 알아봅시다</h1>
-          <p>편하게 이야기할 수 있도록 먼저 어떻게 불러드리면 좋을지 알려주세요.</p>
+          <div className="emotion-flow__intro-copy">
+            <p className="emotion-flow__eyebrow">마음을 나누는 대화</p>
+            <h1 ref={headingRef} tabIndex={-1}>오늘의 기분에 대해<br />함께 알아봅시다</h1>
+            <p>당신의 이야기를 들려주세요.<br />로봇이 언제나 곁에서 소중히 듣고, 공감할게요.</p>
+          </div>
+          <img src="/assets/emotions/emotion-heart-v2.webp" alt="" width="1122" height="1402" decoding="async" />
         </div>
         <form className="profile-form" onSubmit={submitProfile} noValidate>
           <label>
@@ -198,13 +201,15 @@ export function EmotionFlow({ onExit }: EmotionFlowProps) {
         />
         <form className="fallback-form" onSubmit={submitDraft}>
           <label htmlFor="emotion-fallback">직접 입력</label>
-          <textarea
+          <input
             id="emotion-fallback"
+            type="text"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="여기에 오늘 있었던 일을 적어주세요."
+            placeholder="텍스트로 이야기해 주세요"
             maxLength={800}
-            rows={3}
+            autoComplete="off"
+            enterKeyHint="send"
             disabled={session.busy}
           />
           <button className="primary-button" type="submit" disabled={session.busy || !draft.trim()}>
