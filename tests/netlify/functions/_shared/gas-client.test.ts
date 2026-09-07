@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Command, Emotion } from "./contracts";
-import { createGasClient, GasClientError, type GasFetch } from "./gas-client";
+import type { Command, Emotion } from "../../../../netlify/functions/_shared/contracts";
+import { createGasClient, GasClientError, type GasFetch } from "../../../../netlify/functions/_shared/gas-client";
 
 const config = {
   emotionUrl: "https://example.test/emotion",

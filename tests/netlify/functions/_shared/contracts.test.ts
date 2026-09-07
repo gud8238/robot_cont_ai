@@ -4,9 +4,9 @@ import {
   emotionTurnRequestSchema,
   emotionTurnResultSchema,
   voiceCommandRequestSchema
-} from "./contracts";
-import { readServerEnv } from "./env";
-import { parseJsonBody } from "./http";
+} from "../../../../netlify/functions/_shared/contracts";
+import { readServerEnv } from "../../../../netlify/functions/_shared/env";
+import { parseJsonBody } from "../../../../netlify/functions/_shared/http";
 
 const environmentKeys = {
   gemini: "GEMINI" + "_API_KEY",

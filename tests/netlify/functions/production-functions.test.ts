@@ -65,7 +65,7 @@ describe("production Netlify function exports", () => {
     external.generateContent.mockResolvedValue({ text: `{${privateModelOutput}` });
     const fetchBoundary = vi.fn();
     vi.stubGlobal("fetch", fetchBoundary);
-    const { handler } = await import("./voice-command");
+    const { handler } = await import("../../../netlify/functions/voice-command");
 
     const response = await handler(postEvent(
       "/.netlify/functions/voice-command",
@@ -94,7 +94,7 @@ describe("production Netlify function exports", () => {
     ));
     vi.stubGlobal("fetch", fetchBoundary);
     vi.spyOn(crypto, "randomUUID").mockReturnValue(requestId);
-    const { handler } = await import("./emotion-turn");
+    const { handler } = await import("../../../netlify/functions/emotion-turn");
 
     const response = await handler(postEvent(
       "/.netlify/functions/emotion-turn",
@@ -130,7 +130,7 @@ describe("production Netlify function exports", () => {
     vi.spyOn(crypto, "randomUUID")
       .mockReturnValueOnce(firstRequestId)
       .mockReturnValueOnce(secondRequestId);
-    const { handler } = await import("./voice-command");
+    const { handler } = await import("../../../netlify/functions/voice-command");
     const event = postEvent(
       "/.netlify/functions/voice-command",
       { source: "speech", transcript: "뒤로 가" }
@@ -157,7 +157,7 @@ describe("production Netlify function exports", () => {
   it("sanitizes production configuration failures", async () => {
     vi.stubEnv("VOICE_GAS_TOKEN", "");
     const privatePayload = "private-production-payload";
-    const { handler } = await import("./voice-command");
+    const { handler } = await import("../../../netlify/functions/voice-command");
 
     const response = await handler(postEvent(
       "/.netlify/functions/voice-command",

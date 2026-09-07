@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { HandlerEvent } from "@netlify/functions";
-import { createGeminiGateway, GeminiGatewayError } from "./_shared/gemini";
-import { createVoiceHandler } from "./voice-command";
+import { createGeminiGateway, GeminiGatewayError } from "../../../netlify/functions/_shared/gemini";
+import { createVoiceHandler } from "../../../netlify/functions/voice-command";
 
 function postEvent(body: unknown): HandlerEvent {
   return {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { HandlerEvent } from "@netlify/functions";
-import type { EmotionTurnRequest } from "./_shared/contracts";
-import { createEmotionHandler } from "./emotion-turn";
+import type { EmotionTurnRequest } from "../../../netlify/functions/_shared/contracts";
+import { createEmotionHandler } from "../../../netlify/functions/emotion-turn";
 
 const validEmotionRequest: EmotionTurnRequest = {
   profile: { name: "민준", age: 10, honorific: "민준아" },

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { EmotionTurnRequest } from "./contracts";
-import { createGeminiGateway, type GenerateContent } from "./gemini";
+import type { EmotionTurnRequest } from "../../../../netlify/functions/_shared/contracts";
+import { createGeminiGateway, type GenerateContent } from "../../../../netlify/functions/_shared/gemini";
 
 const profile = { name: "민준", age: 10, honorific: "민준아" };
 

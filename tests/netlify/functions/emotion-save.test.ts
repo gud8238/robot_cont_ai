@@ -1,6 +1,6 @@
 import type { HandlerEvent } from "@netlify/functions";
 import { describe, expect, it, vi } from "vitest";
-import { createEmotionSaveHandler } from "./emotion-save";
+import { createEmotionSaveHandler } from "../../../netlify/functions/emotion-save";
 
 function postEvent(body: unknown): HandlerEvent {
   return {
