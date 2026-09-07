@@ -25,6 +25,8 @@ const sensitiveAssignmentNames = `(?:${geminiName}|${emotionGasTokenName}|${voic
 const assignedValue = "(?:[\\\"'][^\\\"'\\r\\n]+[\\\"']|[^\\s#},]+)";
 const objectValue = "[\\\"'][^\\\"'\\r\\n]+[\\\"']";
 const emptySensitiveAssignment = new RegExp(`^[\\t ]*${sensitiveAssignmentNames}[\\t ]*=[\\t ]*$`);
+const directSensitiveAssignment = new RegExp(`^[\\t ]*${sensitiveAssignmentNames}[\\t ]*=([\\s\\S]*)$`);
+const sensitiveAssignmentAttempt = new RegExp(`${sensitiveAssignmentNames}[\\t ]*=`);
 
 const rules = [
   { name: "google-api-key", pattern: new RegExp(geminiPrefix) },
@@ -57,11 +59,16 @@ export function scanEntries(entries: readonly ScanEntry[]): SecretFinding[] {
     ...rules
       .filter(({ pattern }) => pattern.test(content))
       .map(({ name }) => ({ file, rule: name })),
-    ...(file === ".env.example"
-      ? []
-      : content.split(/\r?\n/)
-        .filter((line) => emptySensitiveAssignment.test(line))
-        .map(() => ({ file, rule: "empty-sensitive-assignment" }))),
+    ...content.split(/\r?\n/).flatMap((line) => {
+      if (emptySensitiveAssignment.test(line)) {
+        return file === ".env.example" ? [] : [{ file, rule: "empty-sensitive-assignment" }];
+      }
+      const direct = line.match(directSensitiveAssignment);
+      if (direct) {
+        return [{ file, rule: direct[1].trimStart().startsWith("#") ? "invalid-sensitive-assignment" : "sensitive-assignment" }];
+      }
+      return sensitiveAssignmentAttempt.test(line) ? [{ file, rule: "invalid-sensitive-assignment" }] : [];
+    }),
   ]);
 }
 

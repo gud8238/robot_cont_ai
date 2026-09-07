@@ -1,3 +1,7 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { expect, test } from "vitest";
 import { formatFindings, scanEntries, scanRepository } from "./secret-scanner";
 
@@ -7,6 +11,7 @@ const viteGemini = "VITE_" + "GEMINI";
 const geminiName = "GEMINI" + "_API_KEY";
 const voiceGasTokenName = "VOICE" + "_GAS_TOKEN";
 const emotionGasTokenName = "EMOTION" + "_GAS_TOKEN";
+const emotionGasUrlName = "EMOTION" + "_GAS_URL";
 const genericPrefixes = ["sk", "rk", "pk"].map((prefix) => `${prefix}_`);
 const syntheticGemini = `${geminiPrefix}${"x".repeat(24)}`;
 const syntheticGasToken = `${gasPrefix}${"y".repeat(24)}`;
@@ -21,7 +26,11 @@ test("allows empty example assignments line-by-line while still detecting a late
     ].join("\n"),
   }]);
 
-  expect(findings).toEqual([{ file: ".env.example", rule: "google-api-key" }, { file: ".env.example", rule: "gemini-assignment" }]);
+  expect(findings).toEqual([
+    { file: ".env.example", rule: "google-api-key" },
+    { file: ".env.example", rule: "gemini-assignment" },
+    { file: ".env.example", rule: "sensitive-assignment" },
+  ]);
 });
 
 test("allows an empty sensitive assignment only on an otherwise-empty .env.example line", () => {
@@ -34,6 +43,24 @@ test("allows an empty sensitive assignment only on an otherwise-empty .env.examp
     { file: "config/local.env", rule: "empty-sensitive-assignment" },
     { file: ".env.example", rule: "google-api-key" },
     { file: ".env.example", rule: "gemini-assignment" },
+    { file: ".env.example", rule: "sensitive-assignment" },
+  ]);
+});
+
+test("rejects comments, shell prefixes, and values around the .env.example empty-assignment exception", () => {
+  const findings = scanEntries([{
+    file: ".env.example",
+    content: [
+      `${geminiName}= # placeholder`,
+      `echo ${geminiName}=`,
+      `${emotionGasUrlName}=https://example.test/endpoint`,
+    ].join("\n"),
+  }]);
+
+  expect(findings).toEqual([
+    { file: ".env.example", rule: "invalid-sensitive-assignment" },
+    { file: ".env.example", rule: "invalid-sensitive-assignment" },
+    { file: ".env.example", rule: "sensitive-assignment" },
   ]);
 });
 
@@ -65,6 +92,24 @@ test("scans tracked source candidates without requiring a pre-existing productio
 
   expect(result.findings, formatFindings(result.findings) || undefined).toEqual([]);
   expect(typeof result.scannedDist).toBe("boolean");
+});
+
+test("discovers a generated credential in a tracked test-spec fixture", () => {
+  const root = mkdtempSync(join(tmpdir(), "robot-secret-scan-"));
+  const credential = `${genericPrefixes[0]}${"q".repeat(24)}`;
+  const fixture = join(root, "tests", "e2e", "tracked-credential.spec.ts");
+  try {
+    mkdirSync(join(root, "tests", "e2e"), { recursive: true });
+    writeFileSync(fixture, `const credential = \"${credential}\";`, "utf8");
+    execFileSync("git", ["init", "--quiet"], { cwd: root });
+    execFileSync("git", ["add", "tests/e2e/tracked-credential.spec.ts"], { cwd: root });
+
+    const findings = scanRepository(root).findings;
+    expect(findings).toEqual([{ file: "tests/e2e/tracked-credential.spec.ts", rule: "generic-key" }]);
+    expect(formatFindings(findings)).not.toContain(credential);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("formats failures with only a relative path and rule name", () => {
