@@ -8,12 +8,20 @@ import {
 import { readServerEnv } from "./env";
 import { parseJsonBody } from "./http";
 
+const environmentKeys = {
+  gemini: "GEMINI" + "_API_KEY",
+  emotionUrl: "EMOTION" + "_GAS_URL",
+  voiceUrl: "VOICE" + "_GAS_URL",
+  emotionToken: "EMOTION" + "_GAS_TOKEN",
+  voiceToken: "VOICE" + "_GAS_TOKEN"
+};
+
 const completeServerEnv = {
-  GEMINI_API_KEY: "test-gemini-key",
-  EMOTION_GAS_URL: "https://example.test/emotion",
-  VOICE_GAS_URL: "https://example.test/voice",
-  EMOTION_GAS_TOKEN: "test-emotion-token",
-  VOICE_GAS_TOKEN: "test-voice-token"
+  [environmentKeys.gemini]: "test-gemini-key",
+  [environmentKeys.emotionUrl]: "https://example.test/emotion",
+  [environmentKeys.voiceUrl]: "https://example.test/voice",
+  [environmentKeys.emotionToken]: "test-emotion-token",
+  [environmentKeys.voiceToken]: "test-voice-token"
 };
 
 describe("robot contracts", () => {
@@ -101,7 +109,7 @@ describe("server helpers", () => {
   });
 
   it("returns a generic configuration error without secret values", () => {
-    const incompleteEnv = { ...completeServerEnv, VOICE_GAS_TOKEN: "" };
+    const incompleteEnv = { ...completeServerEnv, [environmentKeys.voiceToken]: "" };
 
     expect(() => readServerEnv(incompleteEnv)).toThrow("Server configuration is invalid");
     expect(() => readServerEnv(incompleteEnv)).not.toThrow("test-gemini-key");

@@ -6,6 +6,8 @@ const gasPrefix = "A" + "Q.";
 const viteGemini = "VITE_" + "GEMINI";
 const geminiName = "GEMINI" + "_API_KEY";
 const voiceGasTokenName = "VOICE" + "_GAS_TOKEN";
+const emotionGasTokenName = "EMOTION" + "_GAS_TOKEN";
+const genericPrefixes = ["sk", "rk", "pk"].map((prefix) => `${prefix}_`);
 const syntheticGemini = `${geminiPrefix}${"x".repeat(24)}`;
 const syntheticGasToken = `${gasPrefix}${"y".repeat(24)}`;
 
@@ -14,12 +16,25 @@ test("allows empty example assignments line-by-line while still detecting a late
     file: ".env.example",
     content: [
       `${geminiName}=`,
-      "EMOTION_GAS_TOKEN=",
+      `${emotionGasTokenName}=`,
       `${geminiName}=${syntheticGemini}`,
     ].join("\n"),
   }]);
 
   expect(findings).toEqual([{ file: ".env.example", rule: "google-api-key" }, { file: ".env.example", rule: "gemini-assignment" }]);
+});
+
+test("allows an empty sensitive assignment only on an otherwise-empty .env.example line", () => {
+  const findings = scanEntries([
+    { file: "config/local.env", content: `${geminiName}=` },
+    { file: ".env.example", content: `${geminiName}=\n${geminiName}=${syntheticGemini}` },
+  ]);
+
+  expect(findings).toEqual([
+    { file: "config/local.env", rule: "empty-sensitive-assignment" },
+    { file: ".env.example", rule: "google-api-key" },
+    { file: ".env.example", rule: "gemini-assignment" },
+  ]);
 });
 
 test.each([
@@ -35,6 +50,14 @@ test.each([
   expect(findings).toContainEqual({ file: "src/controlled-fixture.ts", rule });
   expect(JSON.stringify(findings)).not.toContain(syntheticGemini);
   expect(JSON.stringify(findings)).not.toContain(syntheticGasToken);
+});
+
+test.each(genericPrefixes)("detects generic key-like prefix %s", (prefix) => {
+  const credential = `${prefix}${"z".repeat(24)}`;
+  const findings = scanEntries([{ file: "tests/e2e/controlled-credential.spec.ts", content: credential }]);
+
+  expect(findings).toEqual([{ file: "tests/e2e/controlled-credential.spec.ts", rule: "generic-key" }]);
+  expect(formatFindings(findings)).not.toContain(credential);
 });
 
 test("scans tracked source candidates without requiring a pre-existing production build", () => {

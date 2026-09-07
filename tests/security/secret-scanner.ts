@@ -16,13 +16,20 @@ const geminiPrefix = "AI" + "za";
 const gasPrefix = "A" + "Q\\.";
 const viteGemini = "VITE_" + "GEMINI";
 const geminiName = "GEMINI" + "_API_KEY";
-const gasTokenNames = "(?:EMOTION|VOICE)_GAS_TOKEN";
+const emotionGasTokenName = "EMOTION" + "_GAS_TOKEN";
+const voiceGasTokenName = "VOICE" + "_GAS_TOKEN";
+const emotionGasUrlName = "EMOTION" + "_GAS_URL";
+const voiceGasUrlName = "VOICE" + "_GAS_URL";
+const gasTokenNames = `(?:${emotionGasTokenName}|${voiceGasTokenName})`;
+const sensitiveAssignmentNames = `(?:${geminiName}|${emotionGasTokenName}|${voiceGasTokenName}|${emotionGasUrlName}|${voiceGasUrlName})`;
 const assignedValue = "(?:[\\\"'][^\\\"'\\r\\n]+[\\\"']|[^\\s#},]+)";
 const objectValue = "[\\\"'][^\\\"'\\r\\n]+[\\\"']";
+const emptySensitiveAssignment = new RegExp(`^[\\t ]*${sensitiveAssignmentNames}[\\t ]*=[\\t ]*$`);
 
 const rules = [
   { name: "google-api-key", pattern: new RegExp(geminiPrefix) },
   { name: "gas-token", pattern: new RegExp(`${gasPrefix}[A-Za-z0-9_-]+`) },
+  { name: "generic-key", pattern: /(?:sk|rk|pk)_[A-Za-z0-9_-]{20,}/ },
   { name: "gemini-assignment", pattern: new RegExp(`${geminiName}[\\t ]*(?:=[\\t ]*${assignedValue}|:[\\t ]*${objectValue})`) },
   { name: "gas-token-assignment", pattern: new RegExp(`${gasTokenNames}[\\t ]*(?:=[\\t ]*${assignedValue}|:[\\t ]*${objectValue})`) },
   { name: "client-gemini-variable", pattern: new RegExp(viteGemini) },
@@ -34,7 +41,6 @@ function trackedTextFiles(root: string): string[] {
     .split("\0")
     .filter(Boolean)
     .filter((file) => /^(?:src|netlify|apps-script|tests|public)\//.test(file) || [".env.example", "index.html", "package.json", "package-lock.json", "vite.config.ts", "playwright.config.ts"].includes(file))
-    .filter((file) => !/(?:^|\/)[^/]+\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file))
     .filter((file) => !/\.(?:webp|png|jpe?g|gif|ico|zip|pdf)$/i.test(file));
 }
 
@@ -47,9 +53,16 @@ function filesUnder(directory: string): string[] {
 }
 
 export function scanEntries(entries: readonly ScanEntry[]): SecretFinding[] {
-  return entries.flatMap(({ file, content }) => rules
-    .filter(({ pattern }) => pattern.test(content))
-    .map(({ name }) => ({ file, rule: name })));
+  return entries.flatMap(({ file, content }) => [
+    ...rules
+      .filter(({ pattern }) => pattern.test(content))
+      .map(({ name }) => ({ file, rule: name })),
+    ...(file === ".env.example"
+      ? []
+      : content.split(/\r?\n/)
+        .filter((line) => emptySensitiveAssignment.test(line))
+        .map(() => ({ file, rule: "empty-sensitive-assignment" }))),
+  ]);
 }
 
 export function formatFindings(findings: readonly SecretFinding[]): string {
