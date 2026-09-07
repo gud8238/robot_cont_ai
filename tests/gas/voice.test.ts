@@ -15,7 +15,7 @@ describe("voice GAS writer", () => {
       expect(services.openById).toHaveBeenCalledWith(
         "1-Kfl3N5dInSFagkL8GaCzyBGHmuUgO2NwQtfx2jDA1M"
       );
-      expect(services.getSheetByName).toHaveBeenCalledWith("음성명령 지게차");
+      expect(services.getSheetByName).toHaveBeenCalledWith("음성명령 집게");
       expect(services.getRange).toHaveBeenCalledWith("A2");
       expect(services.setValue).toHaveBeenCalledWith(value);
       expect(services.releaseLock).toHaveBeenCalledOnce();

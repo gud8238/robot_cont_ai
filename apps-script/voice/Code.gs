@@ -1,5 +1,5 @@
 const SPREADSHEET_ID = "1-Kfl3N5dInSFagkL8GaCzyBGHmuUgO2NwQtfx2jDA1M";
-const SHEET_NAME = "음성명령 지게차";
+const SHEET_NAME = "음성명령 집게";
 const TARGET_RANGE = "A2";
 const ALLOWED_VALUES = Object.freeze(["전진", "후진", "좌회전", "우회전"]);
 
