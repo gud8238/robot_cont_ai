@@ -597,6 +597,7 @@ img, svg { display: block; max-width: 100%; }
 }
 .emotion-result__card img {
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
   border-radius: 1.4rem;
   object-fit: cover;
@@ -739,11 +740,19 @@ img, svg { display: block; max-width: 100%; }
   .emotion-flow__intro img { width: min(70%, 260px); margin-inline: auto; max-height: 220px; }
   .profile-form,
   .conversation-controls,
-  .emotion-result__card { grid-template-columns: minmax(0, 1fr); }
+  .emotion-result__card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.9rem;
+    padding: clamp(1rem, 4vw, 1.35rem);
+  }
   .profile-form label:last-of-type,
   .profile-form .primary-button,
   .profile-form .emotion-flow__error { grid-column: auto; }
   .emotion-result__card { text-align: center; }
+  .emotion-result__card img {
+    width: min(100%, 320px);
+    margin-inline: auto;
+  }
   .emotion-result__copy { justify-items: center; }
   .voice-command-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

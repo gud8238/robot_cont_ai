@@ -19,7 +19,7 @@ function fakeGenerate(body: unknown): GenerateContent {
 }
 
 describe("Gemini gateway", () => {
-  it("forces the best emotion on the sixth user utterance", async () => {
+  it("forces the best emotion on the third user utterance", async () => {
     const gateway = createGeminiGateway("test-key", fakeGenerate({
       reply: "지금 마음은 평온함에 가까워 보여요.",
       emotion: "보통",
@@ -27,12 +27,12 @@ describe("Gemini gateway", () => {
       complete: false
     }));
 
-    const result = await gateway.getEmotionTurn(requestWithUserUtterances(6));
+    const result = await gateway.getEmotionTurn(requestWithUserUtterances(3));
 
     expect(result).toMatchObject({ emotion: "보통", complete: true });
   });
 
-  it("defers completion until at least three user utterances", async () => {
+  it("defers completion on the first user utterance", async () => {
     const gateway = createGeminiGateway("test-key", fakeGenerate({
       reply: "조금 더 이야기해 줄래요?",
       emotion: "행복",
@@ -40,9 +40,22 @@ describe("Gemini gateway", () => {
       complete: true
     }));
 
-    const result = await gateway.getEmotionTurn(requestWithUserUtterances(2));
+    const result = await gateway.getEmotionTurn(requestWithUserUtterances(1));
 
     expect(result.complete).toBe(false);
+  });
+
+  it("allows completion on the second user utterance when the emotion is clear", async () => {
+    const gateway = createGeminiGateway("test-key", fakeGenerate({
+      reply: "친구와 함께한 시간이 행복하게 느껴졌군요.",
+      emotion: "행복",
+      confidence: 0.9,
+      complete: true
+    }));
+
+    const result = await gateway.getEmotionTurn(requestWithUserUtterances(2));
+
+    expect(result).toMatchObject({ emotion: "행복", complete: true });
   });
 
   it("counts user utterances rather than every history item", async () => {
@@ -66,7 +79,7 @@ describe("Gemini gateway", () => {
 
     const result = await gateway.getEmotionTurn(request);
 
-    expect(result.complete).toBe(false);
+    expect(result.complete).toBe(true);
   });
 
   it("uses the fixed model and strict emotion JSON response contract", async () => {
@@ -78,7 +91,7 @@ describe("Gemini gateway", () => {
     });
     const gateway = createGeminiGateway("test-key", generate);
 
-    await gateway.getEmotionTurn(requestWithUserUtterances(3));
+    await gateway.getEmotionTurn(requestWithUserUtterances(2));
 
     expect(generate).toHaveBeenCalledOnce();
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
@@ -117,7 +130,7 @@ describe("Gemini gateway", () => {
     }));
   });
 
-  it("requires an allowed emotion in the sixth-turn wire schema", async () => {
+  it("requires an allowed emotion in the third-turn wire schema", async () => {
     const generate = fakeGenerate({
       reply: "지금 마음은 평온함에 가까워 보여요.",
       emotion: "보통",
@@ -126,7 +139,7 @@ describe("Gemini gateway", () => {
     });
     const gateway = createGeminiGateway("test-key", generate);
 
-    await gateway.getEmotionTurn(requestWithUserUtterances(6));
+    await gateway.getEmotionTurn(requestWithUserUtterances(3));
 
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
       config: expect.objectContaining({
@@ -143,7 +156,7 @@ describe("Gemini gateway", () => {
     }));
   });
 
-  it("allows only null or the exact emotion enum during turns three through five", async () => {
+  it("allows only null or the exact emotion enum before the third turn", async () => {
     const generate = fakeGenerate({
       reply: "오늘 마음을 한 번 더 표현해 줄래요?",
       emotion: null,
@@ -152,7 +165,7 @@ describe("Gemini gateway", () => {
     });
     const gateway = createGeminiGateway("test-key", generate);
 
-    await gateway.getEmotionTurn(requestWithUserUtterances(4));
+    await gateway.getEmotionTurn(requestWithUserUtterances(2));
 
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
       config: expect.objectContaining({
@@ -180,7 +193,7 @@ describe("Gemini gateway", () => {
     });
     const gateway = createGeminiGateway("test-key", generate);
 
-    await gateway.getEmotionTurn(requestWithUserUtterances(4));
+    await gateway.getEmotionTurn(requestWithUserUtterances(2));
 
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
       contents: expect.stringMatching(
@@ -198,7 +211,7 @@ describe("Gemini gateway", () => {
     });
     const gateway = createGeminiGateway("test-key", generate);
 
-    await gateway.getEmotionTurn(requestWithUserUtterances(3));
+    await gateway.getEmotionTurn(requestWithUserUtterances(1));
 
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
       contents: expect.stringMatching(

@@ -46,3 +46,35 @@ for (const viewport of viewports) {
     });
   });
 }
+
+test.describe("mobile emotion result", () => {
+  test.use({ viewport: { width: 592, height: 1280 } });
+
+  test("keeps the compact emotion result robot within 320 pixels", async ({ page }) => {
+    await installMockApi(page);
+    await page.goto("/");
+    await page.getByRole("button", { name: "감정인식로봇 시작" }).click();
+    await page.getByRole("textbox", { name: "이름", exact: true }).fill("하늘");
+    await page.getByRole("spinbutton", { name: "나이" }).fill("10");
+    await page.getByRole("textbox", { name: "불러줬으면 하는 이름" }).fill("하늘아");
+    await page.getByRole("button", { name: "대화 시작" }).click();
+
+    const textBox = page.getByRole("textbox", { name: "직접 입력" });
+    for (const message of [
+      "친구와 공원에서 신나게 놀았어요.",
+      "함께 웃었던 순간이 가장 기억나요.",
+      "생각할수록 기분이 좋아져요."
+    ]) {
+      await textBox.fill(message);
+      await page.getByRole("button", { name: "보내기" }).click();
+    }
+
+    const resultImage = page.getByRole("img", { name: "행복한 표정의 로봇" });
+    await expect(resultImage).toBeVisible();
+    const box = await resultImage.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeLessThanOrEqual(320);
+    expect(box!.height).toBeLessThanOrEqual(320);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+});
